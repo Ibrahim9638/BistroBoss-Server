@@ -3,7 +3,7 @@ const cors = require('cors');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
 const app = express();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 // Middleware
 app.use(cors());
@@ -28,18 +28,54 @@ async function run() {
     await client.connect();
     const menuCollection = client.db("BistroBoss").collection("menu");
     const reviewsCollection = client.db("BistroBoss").collection("reviews");
-    
+    const cartsCollection = client.db("BistroBoss").collection("carts");
+    const usersCollection = client.db("BistroBoss").collection("users");
+
+    // User APIs
+    app.post('/users', async(req, res)=>{
+      const user = req.body;
+      const result = await usersCollection.insertOne(user);
+      res.send(result);
+    })
+
+
+
+    // Menu APIs
     app.get('/menu', async(req, res)=>{
         const result = await menuCollection.find().toArray();
         res.send(result);
     })
 
+    // Reviews APIs
     app.get('/reviews', async(req, res)=>{
         const result = await reviewsCollection.find().toArray();
         res.send(result);
     })
 
+    // Cart Collection API
+    app.get('/carts', async(req, res)=>{
+    const email = req.query.email;
+    if(!email){
+      res.send([])
+    }
+    const query = { email: email };
+    const result = await cartsCollection.find(query).toArray();
+    res.send(result);
+    }),
 
+
+    app.post('/carts', async(req, res)=>{
+      const item = req.body;
+      const result = await cartsCollection.insertOne(item);
+      res.send(result);
+    }),
+    app.delete('/carts/:id', async(req, res)=>{
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await cartsCollection.deleteOne(query);
+      res.send(result);
+    })
+    
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
